@@ -46,6 +46,7 @@
             <tr>
               <th>識別碼</th>
               <th>使用者</th>
+              <th>訂閱級</th>
               <th>被贈訂</th>
               <th>贈訂者</th>
             </tr>
@@ -54,6 +55,7 @@
             <tr v-for="subscription in subscriptions">
               <td>{{ subscription.user_id }}</td>
               <td>{{ subscription.user_name }} ({{ subscription.user_login }})</td>
+              <td>{{ subscription.tier }}</td>
               <td>{{ subscription.is_gift }}</td>
               <td>{{ subscription?.gifter_name }} ({{ subscription?.gifter_login }})</td>
             </tr>
