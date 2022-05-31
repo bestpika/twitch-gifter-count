@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no" />
+    <title>圖奇贈訂統計</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.3/css/bulma.min.css">
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        border: 0 none;
+        /* line-height: 0; */
+        min-width: 100vw;
+        min-height: 100vh;
+      }
+
+    </style>
+  </head>
+
+  <body>
+    <div id="main">
+      <div class="table-container">
+        <table class="table is-bordered is-striped is-hoverable">
+          <thead>
+            <tr>
+              <th>識別碼</th>
+              <th>使用者</th>
+              <th>贈訂數</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="gifter in gifters">
+              <td>{{ gifter.id }}</td>
+              <td>{{ gifter.name }} ({{ gifter.login }})</td>
+              <td>{{ gifter.count }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="table-container">
+        <table class="table is-bordered is-striped is-hoverable">
+          <thead>
+            <tr>
+              <th>識別碼</th>
+              <th>使用者</th>
+              <th>被贈訂</th>
+              <th>贈訂者</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="subscription in subscriptions">
+              <td>{{ subscription.user_id }}</td>
+              <td>{{ subscription.user_name }} ({{ subscription.user_login }})</td>
+              <td>{{ subscription.is_gift }}</td>
+              <td>{{ subscription?.gifter_name }} ({{ subscription?.gifter_login }})</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.0.2/dist/vue.global.js"></script>
+    <script>
+      (() => {
+        const main = {
+          data () {
+            return {
+              twitch: {
+                cid: 'jgky7feof8jmy939cxl1kd6hio086g',
+                token: '',
+                uid: 0,
+              },
+              subscriptions: [],
+              gifters: {},
+            }
+          },
+          methods: {
+            async getUser () {
+              const api = 'https://api.twitch.tv/helix/users'
+              const headers = {
+                'Client-ID': this.twitch.cid,
+                'Authorization': `Bearer ${this.twitch.token}`
+              }
+              const response = await fetch(api, {
+                method: 'GET',
+                headers: headers
+              })
+              const user = await response.json()
+              this.twitch.uid = user.data[0].id
+            },
+            async fetchSubscriptions (api) {
+              const headers = {
+                'Client-ID': this.twitch.cid,
+                'Authorization': `Bearer ${this.twitch.token}`
+              }
+              const response = await fetch(api, {
+                method: 'GET',
+                headers: headers
+              })
+              const data = await response.json()
+              console.dir(data)
+              this.subscriptions.push(...data.data)
+              if (!data.pagination.cursor) {
+                return
+              }
+              api = `https://api.twitch.tv/helix/subscriptions?broadcaster_id=${this.twitch.uid}&after=${data.pagination.cursor}`
+              await this.fetchSubscriptions(api)
+            },
+            async getSubscriptions () {
+              let api = `https://api.twitch.tv/helix/subscriptions?broadcaster_id=${this.twitch.uid}`
+              await this.fetchSubscriptions(api)
+            },
+            calcGifts () {
+              this.subscriptions.forEach(sub => {
+                if (sub.is_gift) {
+                  const id = sub.gifter_id
+                  if (!this.gifters[id]) {
+                    this.gifters[id] = {
+                      id: id,
+                      login: sub.gifter_login,
+                      name: sub.gifter_name,
+                      count: 1,
+                    }
+                  } else {
+                    this.gifters[id].count += 1
+                  }
+                }
+              })
+            },
+          },
+          async created () {
+            // token
+            const hash = window.location.hash.slice(1)
+            const query = new URLSearchParams(hash)
+            const token = query.get('access_token') || localStorage.getItem('twitchToken')
+            if (token) {
+              this.twitch.token = token
+              localStorage.setItem('twitchToken', token)
+              location.hash = ''
+            }
+            if (!this.twitch.token) {
+              const cid = this.twitch.cid
+              const uri = `${location.origin}${location.pathname}`
+              const type = 'token'
+              const scope = 'user:read:email%20channel:read:subscriptions'
+              const authUri = `https://id.twitch.tv/oauth2/authorize?client_id=${cid}&redirect_uri=${uri}&response_type=${type}&scope=${scope}`
+              location.href = authUri
+            }
+          },
+          async mounted () {
+            await this.getUser()
+            await this.getSubscriptions()
+            this.calcGifts()
+            localStorage.clear()
+          }
+        }
+        Vue.createApp(main).mount('#main')
+      })()
+    </script>
+  </body>
+
+</html>
