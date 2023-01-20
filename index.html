@@ -90,6 +90,7 @@
                 headers: headers
               })
               const user = await response.json()
+              console.dir(user)
               this.twitch.uid = user.data[0].id
             },
             async fetchSubscriptions (api) {
