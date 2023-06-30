@@ -156,7 +156,9 @@
             await this.getUser()
             await this.getSubscriptions()
             this.calcGifts()
-            localStorage.clear()
+            if (confirm('是否清除登入憑證')) {
+              localStorage.clear()
+            }
           }
         }
         Vue.createApp(main).mount('#main')
