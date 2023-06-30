@@ -147,7 +147,7 @@
               const cid = this.twitch.cid
               const uri = `${location.origin}${location.pathname}`
               const type = 'token'
-              const scope = 'user:read:email%20channel:read:subscriptions'
+              const scope = 'user:read:email%20channel:read:subscriptions%20channel:read:redemptions'
               const authUri = `https://id.twitch.tv/oauth2/authorize?client_id=${cid}&redirect_uri=${uri}&response_type=${type}&scope=${scope}`
               location.href = authUri
             }
